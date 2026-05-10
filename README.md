@@ -4,9 +4,13 @@
 [![JavaScript](https://img.shields.io/badge/javascript-%23F7DF1E.svg?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/ja/docs/Web/JavaScript)
 [![WebGPU](https://img.shields.io/badge/WebGPU-Enabled-success.svg?style=for-the-badge&logo=webgpu&logoColor=white)](#system-requirements)
 [![PWA](https://img.shields.io/badge/PWA-Ready-ff69b4.svg?style=for-the-badge&logo=progressive-web-apps&logoColor=white)](https://web.dev/progressive-web-apps/)
+[![Demo](https://img.shields.io/badge/Demo-Go%20to%20App-blueviolet?style=for-the-badge&logo=google-chrome&logoColor=white)](https://blue1st.github.io/pwa-kakiokoshi/)
 
 **100%オンデバイス（ローカル）で動作する、プライバシー重視の超高速AI音声書き起こし＆文章校正Webアプリケーション（PWA）です。**  
 音声データや書き起こしテキストは外部サーバーへ一切送信されず、すべてブラウザ内で安全に処理されます。
+
+### 🌐 デモサイト (GitHub Pages)
+👉 **[https://blue1st.github.io/pwa-kakiokoshi/](https://blue1st.github.io/pwa-kakiokoshi/)**
 
 ---
 
@@ -93,8 +97,8 @@
 
 1. **リポジトリの複製**
    ```bash
-   git clone <repository-url>
-   cd kakiokoshi
+   git clone https://github.com/blue1st/pwa-kakiokoshi.git
+   cd pwa-kakiokoshi
    ```
 
 2. **依存関係のインストール**
