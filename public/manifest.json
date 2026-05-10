@@ -1,0 +1,18 @@
+{
+  "name": "書き起こし AI - Kakiokoshi AI",
+  "short_name": "書き起こしAI",
+  "description": "On-Device Speech-to-Text & Grammar AI Correction Web Application",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#11111a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

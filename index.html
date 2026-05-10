@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="100%オンデバイスで動作する、プライバシー保護に特化したAI音声書き起こし＆文章校正PWAアプリ。WhisperとGemma 2-2Bがブラウザ上で直接動作します。">
+  <meta name="theme-color" content="#11111a">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./favicon.svg">
+  <title>書き起こし AI — 完全オンデバイス音声認識＆文章校正</title>
+  
+  <!-- Google Fonts: Inter & Outfit & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-main">
+        <div class="logo-area">
+          <div class="logo-glow"></div>
+          <svg class="logo-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 16H13V18H11V16ZM11 6H13V14H11V6Z" fill="url(#logo-grad)"/>
+            <defs>
+              <linearGradient id="logo-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#8b5cf6" />
+                <stop offset="1" stop-color="#3b82f6" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="title-wrap">
+            <h1>Kakiokoshi <span>AI</span></h1>
+            <p class="subtitle">完全オンデバイス音声認識 & 文章校正</p>
+          </div>
+        </div>
+        
+        <!-- WebGPU / WebAssembly status -->
+        <div class="status-badges">
+          <div id="webgpu-status" class="badge status-checking">
+            <span class="badge-dot"></span>
+            <span class="badge-text">WebGPU を確認中...</span>
+          </div>
+          <div id="pwa-status" class="badge status-offline" title="オフラインで使用可能です">
+            <span class="badge-text">PWA</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <!-- Top Alert: Privacy Guarantee -->
+      <section class="privacy-alert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>プライバシー保護：音声とテキストは外部サーバーへ一切送信されず、すべてお使いのPC/スマホ内で処理されます。</span>
+      </section>
+
+      <!-- Grid Layout for controls and inputs -->
+      <div class="grid-layout">
+        <!-- Sidebar Controls -->
+        <aside class="settings-sidebar card">
+          <div class="card-header">
+            <h3>🤖 AI モデル設定</h3>
+          </div>
+          <div class="card-body">
+            <!-- Whisper STT Selection -->
+            <div class="control-group">
+              <label for="whisper-model-select">音声認識モデル (Whisper)</label>
+              <select id="whisper-model-select" class="custom-select">
+                <option value="onnx-community/whisper-tiny" selected>Whisper Tiny (約75MB - 高速・軽量)</option>
+                <option value="onnx-community/whisper-base">Whisper Base (約140MB - 高精度)</option>
+              </select>
+              <span class="control-hint">初回ロード時のみモデルのダウンロードが発生します。</span>
+            </div>
+
+            <!-- AI Correction Options -->
+            <div class="control-group border-top">
+              <div class="toggle-container">
+                <div class="toggle-text-wrap">
+                  <label for="llm-enable-toggle" class="toggle-label">AI 文章校正を有効化</label>
+                  <span class="control-hint">書き起こし後にAIが自然な文章へ自動修正します。</span>
+                </div>
+                <div class="switch-wrap">
+                  <input type="checkbox" id="llm-enable-toggle" class="switch-input">
+                  <label for="llm-enable-toggle" class="switch-slider"></label>
+                </div>
+              </div>
+
+              <!-- LLM Model Info Card (No selector needed since Qwen was removed) -->
+              <div id="llm-model-selector-group" class="control-group border-top hidden" style="margin-top: 0.75rem; padding-top: 0.75rem;">
+                <div style="font-size: 0.85rem; font-weight: 500; color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444;"></span>
+                  校正 AI: <strong>Gemma 4 E2B</strong> (約1.5GB)
+                </div>
+                
+                <div id="llm-info-panel" class="warning-panel" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span id="llm-info-text">
+                    初回ロード時に約1.5GBのモデルダウンロードが発生します。WebAssembly (WASM) ではメモリ不足 (OOM) でクラッシュする可能性が高いため、<strong>WebGPU での動作を強く推奨</strong>します。<br>
+                    <span style="color: rgba(255, 255, 255, 0.7); display: inline-block; margin-top: 0.4rem;">
+                      💡 <strong>キャッシュについて:</strong> 一度ダウンロードされたモデルは、ブラウザ標準の <strong>Cache Storage API / IndexedDB</strong> に自動的に保存（キャッシュ）されます。2回目以降の起動ではダウンロードは行われず、瞬時にオフラインで使い回すことが可能です。
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Language Setting -->
+            <div class="control-group border-top">
+              <label for="language-select">音声の言語</label>
+              <select id="language-select" class="custom-select">
+                <option value="japanese" selected>日本語 (Japanese)</option>
+                <option value="english">英語 (English)</option>
+                <option value="auto">自動検出 (Auto Detect)</option>
+              </select>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Workspace (Audio capture & triggers) -->
+        <section class="workspace-area">
+          <div class="workspace-tabs-header">
+            <button class="tab-btn active" data-tab="record-tab">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+              マイク録音
+            </button>
+            <button class="tab-btn" data-tab="upload-tab">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              ファイルを追加
+            </button>
+          </div>
+
+          <div class="card workspace-card">
+            <!-- Record Tab -->
+            <div id="record-tab" class="tab-content active">
+              <div class="recorder-wrapper">
+                <div class="wave-container">
+                  <canvas id="wave-canvas"></canvas>
+                  <div id="record-timer" class="record-timer">00:00</div>
+                </div>
+                
+                <div class="recorder-controls">
+                  <button id="record-btn" class="btn btn-record">
+                    <span class="btn-icon"></span>
+                    <span class="btn-label">録音開始</span>
+                  </button>
+                  <button id="stop-record-btn" class="btn btn-stop" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                    </svg>
+                    <span>録音を停止・確定</span>
+                  </button>
+                </div>
+                <div id="audio-preview-container" class="audio-preview-container hidden">
+                  <p class="preview-title">録音した音声:</p>
+                  <audio id="recorded-audio" controls class="custom-audio"></audio>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload Tab -->
+            <div id="upload-tab" class="tab-content">
+              <div id="drop-zone" class="drop-zone">
+                <input type="file" id="file-input" accept="audio/*" class="file-input">
+                <div class="drop-zone-content">
+                  <div class="upload-icon-glow">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                  </div>
+                  <h3>ここに音声ファイルをドラッグ＆ドロップ</h3>
+                  <p>またはファイルを選択 (MP3, WAV, M4A, FLACなど)</p>
+                  <button class="btn btn-secondary">ファイルを選択</button>
+                </div>
+                <div id="file-preview-container" class="file-preview-container hidden">
+                  <div class="file-info-header">
+                    <span class="file-name">audio_file.mp3</span>
+                    <span id="remove-file-btn" class="remove-btn">&times;</span>
+                  </div>
+                  <audio id="uploaded-audio" controls class="custom-audio"></audio>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Run Button -->
+          <div class="action-bar">
+            <button id="run-transcribe-btn" class="btn btn-primary btn-large btn-glow" disabled>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>書き起こしを開始</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Models Loading and Download Progress Overlay -->
+      <section id="progress-card" class="progress-card card hidden">
+        <div class="card-header">
+          <h3 id="progress-title">🔄 AIモデルの準備中...</h3>
+          <span id="progress-speed" class="progress-speed-text"></span>
+        </div>
+        <div class="card-body">
+          <div class="status-message" id="current-status-msg">
+            モデルの読み込み、および初期化を行っています。しばらくお待ちください...
+          </div>
+          <!-- Multiple downloads indicators -->
+          <div id="download-progress-container" class="download-progress-container">
+            <!-- Shards progress injected here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Output / Results Section -->
+      <section id="results-section" class="results-section hidden">
+        <div class="results-header">
+          <h2>📝 処理結果</h2>
+          <div class="stats-badge-container">
+            <span id="stt-time-badge" class="stats-badge hidden">STT: 0.0s</span>
+            <span id="llm-time-badge" class="stats-badge hidden">AI校正: 0.0s</span>
+          </div>
+        </div>
+
+        <div class="results-grid">
+          <!-- Col 1: Raw STT Output -->
+          <div class="result-pane card">
+            <div class="pane-header">
+              <div class="pane-title">
+                <span class="badge badge-raw">Raw</span>
+                <h3>素の書き起こし (Whisper)</h3>
+              </div>
+              <div class="pane-actions">
+                <button class="icon-btn" id="copy-raw-btn" title="クリップボードにコピー">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="pane-body">
+              <textarea id="raw-text-output" class="result-textarea" placeholder="書き起こしテキストがここに表示されます。編集可能です。"></textarea>
+            </div>
+            <div class="pane-footer">
+              <button id="run-correct-manually-btn" class="btn btn-secondary btn-full" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>このテキストを AI 校正する</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Col 2: Corrected & Diff View -->
+          <div class="result-pane card">
+            <div class="pane-header">
+              <div class="pane-title tab-header">
+                <button class="pane-tab active" data-output-tab="corrected-tab">
+                  <span class="badge badge-ai" id="ai-badge-label">AI</span>
+                  修正後テキスト
+                </button>
+                <button class="pane-tab" data-output-tab="diff-tab">
+                  差分比較
+                </button>
+              </div>
+              <div class="pane-actions">
+                <button class="icon-btn" id="copy-corrected-btn" title="クリップボードにコピー">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div class="pane-body">
+              <!-- Corrected Text Tab Content -->
+              <div id="corrected-tab" class="output-tab-content active">
+                <div id="corrected-text-output" class="text-rendered-view placeholder-text">
+                  AI校正を実行すると、ここに修正後のテキストが表示されます。
+                </div>
+              </div>
+              
+              <!-- Diff Tab Content -->
+              <div id="diff-tab" class="output-tab-content">
+                <div id="diff-text-output" class="text-rendered-view placeholder-text">
+                  AI校正を実行すると、ここに変更された箇所の差分（<del class="diff-del-sample">削除箇所</del> と <ins class="diff-ins-sample">追加箇所</ins>）が表示されます。
+                </div>
+              </div>
+            </div>
+
+            <div class="pane-footer">
+              <button id="download-markdown-btn" class="btn btn-secondary btn-full" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Markdownとしてダウンロード</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>© 2026 Kakiokoshi AI. WebGPU on-device computing. Powered by Hugging Face Transformers.js v3.</p>
+    </footer>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
